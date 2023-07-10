@@ -13,21 +13,74 @@ The rise of T20 cricket is bound to change how the other formats of the game is 
 library(tidyverse)
 library(primer.data)
 library(rstanarm)
+library(ggthemes)
+library(ggdist)
+library(gt)
+library(janitor)
+library(broom.mixed)
+library(gtsummary)
 ```
+
 ```{r}
-x <- read_csv("odicricketstats2007-present.csv") |> as_tibble()
+rawdata1 <- read_csv("odicricketstats2007-present.csv", show_col_types = FALSE) |> 
+  as_tibble() |>
+  mutate(HS = as.double(str_sub(HS, 0, -2))) |>
+  select(Player, Mat, SR, HS)
 
-graph <- x |> select("SR", "4s", "6s") 
 
-fit_obj1 <- stan_glm(data = x,
-            formula = SR ~ 1,
-            family = gaussian,
-            refresh = 0,
-            seed = 51)
+rawdata2 <- read_csv("odicricketstats.csv", show_col_types = FALSE) |> 
+  select(!`...14`) |>
+  filter(Span != "Span") |>
+  mutate(Mat = as.double(Mat),
+         SR = as.double(SR)) |>
+  mutate(HS = as.double(str_sub(HS, 0, -2))) |>
+  select(Player, Mat, SR, HS)
 
-y <- read_csv("odicricketstats.csv") |> as_tibble()
+datarows <- bind_rows(rawdata1, rawdata2)
 
-graph <- y |> select("SR", "100", "50") |> ggplot(aes(x = Player, y = SR)) + labs()
+
+
+
+```
+
+
+
+```{r}
+# model_data <- rawdata1 |>
+#   mutate(start_year = as.double(str_sub(Span, 0, 4)),
+#          end_year = as.double(str_sub(Span, 6, 9))) |>
+#   mutate(years_span = end_year - start_year) |>
+#   select(Player, Mat, Inns, NO, Runs, HS, Ave, BF, SR, `100`, `50`, `0`, `4s`, `6s`, `years_span`)
+  
+model <- stan_glm(data = datarows, formula = HS ~ Mat, 
+                  family = gaussian, refresh = 0, seed = 10001,
+                  iter = 5000)
+
+newobs <- tibble(Mat = c(0, 100,200,300))
+
+pe <- posterior_epred(model, newdata = newobs) |> 
+  as_tibble() |>
+   pivot_longer(cols = `1`:`2`:`3`:`4`, 
+               names_to = "Matches",
+               values_to = "values") |>
+  mutate(Matches = case_when(Matches == "1" ~ "0",
+                             Matches == "2" ~ "100",
+                             Matches == "3" ~ "200",
+                             Matches ==  "4" ~ "300"))
+
+pe |> 
+  ggplot(aes(x = values, fill = Matches)) +
+      geom_histogram(aes(y = after_stat(count/sum(count))),
+                   alpha = 0.5, 
+                   bins = 100, 
+                   position = "identity")
+
+
+
+
+
+
+graph2 <- y |> select("SR", "100", "50") |> ggplot(aes(x = Player, y = SR)) + labs() + geom_point()
 
 fit_obj2 <- stan_glm(data = x,
             formula = SR ~ 1,
@@ -37,6 +90,9 @@ fit_obj2 <- stan_glm(data = x,
 
 ```
 
+```{r}
+
+```
 
 
 
