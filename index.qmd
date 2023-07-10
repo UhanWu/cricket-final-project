@@ -1,0 +1,44 @@
+---
+title: "Cricket ODI Strike Rate"
+author: "Satvik Kasinadhuni"
+---
+
+## ODI Strike Rate of Indian Batsmen over time with the rise of T20 Cricket
+
+The rise of T20 cricket is bound to change how the other formats of the game is played. We see this through the England's team approach of playing Test Cricket with the ideology of "Bazball", and the rise of more boundaries in One Day International matches. In this project, I explore the increase of the average strike rate of Indian Batsmen over time. 
+
+```{r}
+#| message: false
+#| echo: false
+library(tidyverse)
+library(primer.data)
+library(rstanarm)
+```
+```{r}
+x <- read_csv("odicricketstats2007-present.csv") |> as_tibble()
+
+graph <- x |> select("SR", "4s", "6s") 
+
+fit_obj1 <- stan_glm(data = x,
+            formula = SR ~ 1,
+            family = gaussian,
+            refresh = 0,
+            seed = 51)
+
+y <- read_csv("odicricketstats.csv") |> as_tibble()
+
+graph <- y |> select("SR", "100", "50") |> ggplot(aes(x = Player, y = SR)) + labs()
+
+fit_obj2 <- stan_glm(data = x,
+            formula = SR ~ 1,
+            family = gaussian,
+            refresh = 0,
+            seed = 52)
+
+```
+
+
+
+
+
+
